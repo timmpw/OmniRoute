@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { getClaudeCodeDefaultModels } from "../../open-sse/config/providerRegistry.ts";
+import { CLAUDE_CODE_DEFAULT_MODELS } from "../../src/shared/constants/claudeCodeDefaults.ts";
 
 test("getClaudeCodeDefaultModels returns expected default models", () => {
   const models = getClaudeCodeDefaultModels();
@@ -24,4 +25,8 @@ test("getClaudeCodeDefaultModels returns expected default models", () => {
   if (models.haiku) {
     assert.match(models.haiku, /haiku/i);
   }
+});
+
+test("browser-safe CLI defaults stay aligned with the Claude provider registry", () => {
+  assert.deepEqual(CLAUDE_CODE_DEFAULT_MODELS, getClaudeCodeDefaultModels());
 });

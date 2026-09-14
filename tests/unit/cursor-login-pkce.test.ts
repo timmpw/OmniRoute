@@ -14,6 +14,7 @@ import {
 } from "../../src/lib/oauth/services/cursorLogin.ts";
 import { CURSOR_CONFIG } from "../../src/lib/oauth/constants/oauth.ts";
 import { CURSOR_AGENT_CLI_VERSION } from "../../open-sse/utils/cursorAgentCliVersion.ts";
+import { CURSOR_AGENT_CLI_VERSION as BROWSER_CURSOR_AGENT_CLI_VERSION } from "../../src/shared/constants/cursorAgentCliVersion.ts";
 
 function b64urlJson(obj: Record<string, unknown>): string {
   return Buffer.from(JSON.stringify(obj)).toString("base64url");
@@ -30,6 +31,7 @@ describe("CURSOR_CONFIG deep-control endpoints", () => {
     assert.equal(CURSOR_CONFIG.refreshUrl, "https://api2.cursor.sh/auth/exchange_user_api_key");
     assert.equal(CURSOR_CONFIG.modelsEndpoint, "/aiserver.v1.AiService/AvailableModels");
     assert.equal(CURSOR_CONFIG.dbKeys.refreshToken, "cursorAuth/refreshToken");
+    assert.equal(BROWSER_CURSOR_AGENT_CLI_VERSION, CURSOR_AGENT_CLI_VERSION);
     assert.equal(CURSOR_CONFIG.clientVersion, CURSOR_AGENT_CLI_VERSION);
   });
 });
