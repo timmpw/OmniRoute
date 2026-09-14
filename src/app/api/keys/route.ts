@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   getApiKeys,
   getApiKeysCount,
+  getApiKeyById,
   createApiKey,
   updateApiKeyPermissions,
 } from "@/lib/db/apiKeys";
@@ -94,12 +95,13 @@ export async function POST(request) {
       allowedConnections,
     });
     if (
-      noLog === true ||
-      allowUsageCommand === true ||
-      usageLimitEnabled === true ||
-      dailyUsageLimitUsd !== undefined ||
-      weeklyUsageLimitUsd !== undefined ||
-      chaosModeEnabled === true
+      !apiKey.templateCopied &&
+      (noLog === true ||
+        allowUsageCommand === true ||
+        usageLimitEnabled === true ||
+        dailyUsageLimitUsd !== undefined ||
+        weeklyUsageLimitUsd !== undefined ||
+        chaosModeEnabled === true)
     ) {
       await updateApiKeyPermissions(apiKey.id, {
         ...(noLog === true && { noLog: true }),
@@ -119,6 +121,8 @@ export async function POST(request) {
     // would hang until the fetch settled or timed out (#6570). Errors inside
     // syncKeysToCloudIfEnabled() are already caught and logged internally, so
     // this is safe to leave unawaited.
+    const persistedApiKey = await getApiKeyById(apiKey.id);
+
     void syncKeysToCloudIfEnabled();
 
     return NextResponse.json(
@@ -127,19 +131,19 @@ export async function POST(request) {
         name: apiKey.name,
         id: apiKey.id,
         machineId: apiKey.machineId,
-        modelAccessMode: apiKey.modelAccessMode,
-        allowedModels: apiKey.allowedModels,
-        allowedCombos: apiKey.allowedCombos,
-        allowedConnections: apiKey.allowedConnections,
-        noLog: noLog === true,
-        allowUsageCommand: allowUsageCommand === true,
-        usageLimitEnabled: usageLimitEnabled === true,
-        dailyUsageLimitUsd: dailyUsageLimitUsd ?? null,
-        weeklyUsageLimitUsd: weeklyUsageLimitUsd ?? null,
-        chaosModeEnabled: chaosModeEnabled === true,
-        streamDefaultMode: "legacy",
-        compressionEnabled: true,
-        cacheDefaultMode: "legacy",
+        modelAccessMode: persistedApiKey?.modelAccessMode ?? apiKey.modelAccessMode,
+        allowedModels: persistedApiKey?.allowedModels ?? apiKey.allowedModels,
+        allowedCombos: persistedApiKey?.allowedCombos ?? apiKey.allowedCombos,
+        allowedConnections: persistedApiKey?.allowedConnections ?? apiKey.allowedConnections,
+        noLog: persistedApiKey?.noLog ?? noLog === true,
+        allowUsageCommand: persistedApiKey?.allowUsageCommand ?? allowUsageCommand === true,
+        usageLimitEnabled: persistedApiKey?.usageLimitEnabled ?? usageLimitEnabled === true,
+        dailyUsageLimitUsd: persistedApiKey?.dailyUsageLimitUsd ?? dailyUsageLimitUsd ?? null,
+        weeklyUsageLimitUsd: persistedApiKey?.weeklyUsageLimitUsd ?? weeklyUsageLimitUsd ?? null,
+        chaosModeEnabled: persistedApiKey?.chaosModeEnabled ?? chaosModeEnabled === true,
+        streamDefaultMode: persistedApiKey?.streamDefaultMode ?? "legacy",
+        compressionEnabled: persistedApiKey?.compressionEnabled ?? true,
+        cacheDefaultMode: persistedApiKey?.cacheDefaultMode ?? "legacy",
       },
       { status: 201 }
     );

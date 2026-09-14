@@ -521,6 +521,12 @@ test("enforceApiKeyPolicy rejects disallowed models and exhausted budgets", asyn
     "cx/gpt-5.6-sol"
   );
   assert.equal(codex.rejection, null);
+
+  const reroutedCodex = await policy.enforceApiKeyPolicy(
+    makePolicyRequest(budgetedKey.key),
+    "codex/deepseek-v4-pro"
+  );
+  assert.equal(reroutedCodex.rejection.status, 429);
 });
 
 test("enforceApiKeyPolicy returns Anthropic error envelope for /v1/messages model denials", async () => {

@@ -66,9 +66,11 @@ describe("policyEngine", async () => {
 
     const canonical = evaluateRequest({ model: "codex/gpt-5.6-sol", apiKeyId: keyId });
     const alias = evaluateRequest({ model: "cx/gpt-5.6-sol", apiKeyId: keyId });
+    const rerouted = evaluateRequest({ model: "codex/deepseek-v4-pro", apiKeyId: keyId });
 
     assert.equal(canonical.allowed, true);
     assert.equal(alias.allowed, true);
+    assert.equal(rerouted.allowed, false);
   });
 
   test("denies when client is locked out", () => {

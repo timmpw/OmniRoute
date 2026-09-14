@@ -429,6 +429,9 @@ jobs:
           create_manifest "${IMAGE_NAME}" "-web-bun" /tmp/digests/bun-web optional
 
       - name: Reconcile GHCR manifests
+        # The manifests are created by the preceding step. Retain this block only
+        # temporarily for auditability while preventing a second tag publication.
+        if: ${{ false }}
         run: |
           set -euo pipefail
 

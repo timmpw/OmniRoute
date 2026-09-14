@@ -31,7 +31,7 @@ test("new API keys inherit timofey_bunin settings without inheriting its secret"
     `UPDATE api_keys SET
       model_access_mode = 'restricted', allowed_models = '["cx/*"]', allowed_combos = '["team"]',
       allowed_connections = '["connection-1"]', no_log = 1, usage_limit_enabled = 1,
-      daily_usage_limit_usd = 100, weekly_usage_limit_usd = 125, cache_default_mode = 'auto',
+      daily_usage_limit_usd = 100, weekly_usage_limit_usd = 125, cache_default_mode = 'bypass',
       stream_default_mode = 'openai', compression_enabled = 0, max_requests_per_day = 500,
       max_requests_per_minute = 20, allowed_endpoints = '["chat"]', chaos_mode_enabled = 1
      WHERE id = ?`
@@ -69,7 +69,7 @@ test("new API keys inherit timofey_bunin settings without inheriting its secret"
     usage_limit_enabled: 1,
     daily_usage_limit_usd: 100,
     weekly_usage_limit_usd: 125,
-    cache_default_mode: "auto",
+    cache_default_mode: "bypass",
     stream_default_mode: "openai",
     compression_enabled: 0,
     max_requests_per_day: 500,

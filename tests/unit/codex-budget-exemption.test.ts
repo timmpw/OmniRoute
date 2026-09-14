@@ -13,3 +13,8 @@ test("does not exempt models from other providers", () => {
   assert.equal(isCodexBudgetExemptModel("anthropic/claude-sonnet-4"), false);
   assert.equal(isCodexBudgetExemptModel(null), false);
 });
+
+test("does not exempt a Codex-prefixed model that is rerouted to another provider", () => {
+  assert.equal(isCodexBudgetExemptModel("codex/deepseek-v4-pro"), false);
+  assert.equal(isCodexBudgetExemptModel("cx/qwen3-coder"), false);
+});

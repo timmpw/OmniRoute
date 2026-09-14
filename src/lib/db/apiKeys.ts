@@ -670,6 +670,11 @@ type ApiKeyTemplate = {
   no_log: number;
 };
 
+type ApiKeyTemplateCopyResult = {
+  copied: boolean;
+  noLog: boolean;
+};
+
 function getApiKeyTemplate(db: ApiKeysDbLike): ApiKeyTemplate | null {
   const template = db
     .prepare("SELECT id, no_log FROM api_keys WHERE name = ? ORDER BY created_at DESC LIMIT 1")
@@ -682,8 +687,8 @@ function copyApiKeyTemplateSettings(
   db: ApiKeysDbLike,
   template: ApiKeyTemplate | null,
   targetApiKeyId: string
-): boolean {
-  if (!template) return false;
+): ApiKeyTemplateCopyResult {
+  if (!template) return { copied: false, noLog: false };
 
   db.prepare(
     `UPDATE api_keys
@@ -731,7 +736,7 @@ function copyApiKeyTemplateSettings(
      WHERE api_key_id = @templateApiKeyId`
   ).run({ templateApiKeyId: template.id, targetApiKeyId });
 
-  return template.no_log === 1;
+  return { copied: true, noLog: template.no_log === 1 };
 }
 
 export async function createApiKey(
@@ -791,10 +796,11 @@ export async function createApiKey(
     await hashKey(apiKey.key),
     JSON.stringify(scopes)
   );
-  setNoLog(apiKey.id, copyApiKeyTemplateSettings(db, template, apiKey.id));
+  const templateCopy = copyApiKeyTemplateSettings(db, template, apiKey.id);
+  setNoLog(apiKey.id, templateCopy.noLog);
 
   backupDbFile("pre-write");
-  return apiKey;
+  return { ...apiKey, templateCopied: templateCopy.copied };
 }
 
 export async function regenerateApiKey(id: string) {
