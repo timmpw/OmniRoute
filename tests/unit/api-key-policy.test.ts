@@ -515,6 +515,12 @@ test("enforceApiKeyPolicy rejects disallowed models and exhausted budgets", asyn
   );
   assert.equal(overBudget.rejection.status, 429);
   assert.match(await readErrorMessage(overBudget.rejection), /Daily budget exceeded/);
+
+  const codex = await policy.enforceApiKeyPolicy(
+    makePolicyRequest(budgetedKey.key),
+    "cx/gpt-5.6-sol"
+  );
+  assert.equal(codex.rejection, null);
 });
 
 test("enforceApiKeyPolicy returns Anthropic error envelope for /v1/messages model denials", async () => {

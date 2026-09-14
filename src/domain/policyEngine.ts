@@ -11,6 +11,7 @@
 import { checkLockout } from "./lockoutPolicy";
 import { checkBudget } from "./costRules";
 import { resolveFallbackChain } from "./fallbackPolicy";
+import { isCodexBudgetExemptModel } from "@/shared/utils/codexBudgetExemption";
 
 interface PolicyRequest {
   model: string;
@@ -61,7 +62,7 @@ export function evaluateRequest(request: PolicyRequest): PolicyVerdict {
   }
 
   // ── 2. Budget Policy ───────────────────────────────
-  if (apiKeyId) {
+  if (apiKeyId && !isCodexBudgetExemptModel(model)) {
     const budget = checkBudget(apiKeyId);
     if (budget && !budget.allowed) {
       return {

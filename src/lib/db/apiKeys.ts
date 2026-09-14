@@ -663,6 +663,77 @@ async function hashKey(key: string): Promise<string> {
   return createHash("sha256").update(key).digest("hex"); // nosemgrep: insufficient-password-hash
 }
 
+const API_KEY_TEMPLATE_NAME = "timofey_bunin";
+
+type ApiKeyTemplate = {
+  id: string;
+  no_log: number;
+};
+
+function getApiKeyTemplate(db: ApiKeysDbLike): ApiKeyTemplate | null {
+  const template = db
+    .prepare("SELECT id, no_log FROM api_keys WHERE name = ? ORDER BY created_at DESC LIMIT 1")
+    .get(API_KEY_TEMPLATE_NAME) as ApiKeyTemplate | undefined;
+
+  return template?.id ? template : null;
+}
+
+function copyApiKeyTemplateSettings(
+  db: ApiKeysDbLike,
+  template: ApiKeyTemplate | null,
+  targetApiKeyId: string
+): boolean {
+  if (!template) return false;
+
+  db.prepare(
+    `UPDATE api_keys
+     SET allowed_models = (SELECT allowed_models FROM api_keys WHERE id = @templateApiKeyId),
+         no_log = (SELECT no_log FROM api_keys WHERE id = @templateApiKeyId),
+         expires_at = (SELECT expires_at FROM api_keys WHERE id = @templateApiKeyId),
+         ip_allowlist = (SELECT ip_allowlist FROM api_keys WHERE id = @templateApiKeyId),
+         scopes = (SELECT scopes FROM api_keys WHERE id = @templateApiKeyId),
+         allowed_combos = (SELECT allowed_combos FROM api_keys WHERE id = @templateApiKeyId),
+         throttle_delay_ms = (SELECT throttle_delay_ms FROM api_keys WHERE id = @templateApiKeyId),
+         stream_default_mode = (SELECT stream_default_mode FROM api_keys WHERE id = @templateApiKeyId),
+         allowed_quotas = (SELECT allowed_quotas FROM api_keys WHERE id = @templateApiKeyId),
+         disable_non_public_models = (SELECT disable_non_public_models FROM api_keys WHERE id = @templateApiKeyId),
+         usage_limit_enabled = (SELECT usage_limit_enabled FROM api_keys WHERE id = @templateApiKeyId),
+         daily_usage_limit_usd = (SELECT daily_usage_limit_usd FROM api_keys WHERE id = @templateApiKeyId),
+         weekly_usage_limit_usd = (SELECT weekly_usage_limit_usd FROM api_keys WHERE id = @templateApiKeyId),
+         cache_default_mode = (SELECT cache_default_mode FROM api_keys WHERE id = @templateApiKeyId),
+         model_access_mode = (SELECT model_access_mode FROM api_keys WHERE id = @templateApiKeyId),
+         compression_enabled = (SELECT compression_enabled FROM api_keys WHERE id = @templateApiKeyId),
+         blocked_models = (SELECT blocked_models FROM api_keys WHERE id = @templateApiKeyId),
+         allowed_connections = (SELECT allowed_connections FROM api_keys WHERE id = @templateApiKeyId),
+         auto_resolve = (SELECT auto_resolve FROM api_keys WHERE id = @templateApiKeyId),
+         is_active = (SELECT is_active FROM api_keys WHERE id = @templateApiKeyId),
+         access_schedule = (SELECT access_schedule FROM api_keys WHERE id = @templateApiKeyId),
+         max_requests_per_day = (SELECT max_requests_per_day FROM api_keys WHERE id = @templateApiKeyId),
+         max_requests_per_minute = (SELECT max_requests_per_minute FROM api_keys WHERE id = @templateApiKeyId),
+         max_sessions = (SELECT max_sessions FROM api_keys WHERE id = @templateApiKeyId),
+         rate_limits = (SELECT rate_limits FROM api_keys WHERE id = @templateApiKeyId),
+         is_banned = (SELECT is_banned FROM api_keys WHERE id = @templateApiKeyId),
+         proxy_id = (SELECT proxy_id FROM api_keys WHERE id = @templateApiKeyId),
+         allowed_endpoints = (SELECT allowed_endpoints FROM api_keys WHERE id = @templateApiKeyId),
+         allow_usage_command = (SELECT allow_usage_command FROM api_keys WHERE id = @templateApiKeyId),
+         chaos_mode_enabled = (SELECT chaos_mode_enabled FROM api_keys WHERE id = @templateApiKeyId)
+     WHERE id = @targetApiKeyId`
+  ).run({ templateApiKeyId: template.id, targetApiKeyId });
+
+  db.prepare(
+    `INSERT INTO domain_budgets (
+       api_key_id, daily_limit_usd, weekly_limit_usd, monthly_limit_usd,
+       warning_threshold, reset_interval, reset_time
+     )
+     SELECT @targetApiKeyId, daily_limit_usd, weekly_limit_usd, monthly_limit_usd,
+       warning_threshold, reset_interval, reset_time
+     FROM domain_budgets
+     WHERE api_key_id = @templateApiKeyId`
+  ).run({ templateApiKeyId: template.id, targetApiKeyId });
+
+  return template.no_log === 1;
+}
+
 export async function createApiKey(
   name: string,
   machineId: string,
@@ -683,6 +754,7 @@ export async function createApiKey(
   assertExclusiveLeaseKeyPolicy(scopes, allowedConnections);
 
   const db = getDbInstance() as ApiKeysDbLike;
+  const template = getApiKeyTemplate(db);
   const now = new Date().toISOString();
 
   const { generateApiKeyWithMachine } = await import("@/shared/utils/apiKey");
@@ -719,7 +791,7 @@ export async function createApiKey(
     await hashKey(apiKey.key),
     JSON.stringify(scopes)
   );
-  setNoLog(apiKey.id, false);
+  setNoLog(apiKey.id, copyApiKeyTemplateSettings(db, template, apiKey.id));
 
   backupDbFile("pre-write");
   return apiKey;

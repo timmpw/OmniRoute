@@ -28,6 +28,7 @@ import { resolveQuotaKeyScope } from "@/lib/quota/quotaKey";
 import { isQuotaModelName, parseQuotaModelName } from "@/lib/quota/quotaModelNaming";
 import { buildApiKeyUsageLimitPolicyRejection } from "@/lib/usage/apiKeyUsageLimits";
 import { ALL_COMBOS_ACCESS_RULE } from "@/shared/constants/comboAccess";
+import { isCodexBudgetExemptModel } from "./codexBudgetExemption";
 
 // Default to no per-key request cap. API keys can still opt into explicit
 // limits via Settings/API Keys, while provider/account quota controls remain
@@ -452,6 +453,7 @@ async function validateKeyScheduleAndUsage(context: PolicyContext): Promise<Resp
       `Access denied outside allowed hours (${from}–${until} ${tz})`
     );
   }
+  if (isCodexBudgetExemptModel(context.modelStr)) return null;
   if (apiKeyInfo.usageLimitEnabled !== true) return null;
 
   try {
@@ -575,7 +577,8 @@ async function validateComboAccess(
 }
 
 function validateBudget(context: PolicyContext): Response | null {
-  const { apiKeyInfo } = context;
+  const { apiKeyInfo, modelStr } = context;
+  if (isCodexBudgetExemptModel(modelStr)) return null;
   if (!apiKeyInfo.id) return null;
   try {
     const budgetOk = checkBudget(apiKeyInfo.id);

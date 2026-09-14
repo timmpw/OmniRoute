@@ -59,6 +59,18 @@ describe("policyEngine", async () => {
     assert.ok(verdict.reason.includes("Budget exceeded"));
   });
 
+  test("allows Codex models when the budget is exceeded", () => {
+    const keyId = `pe-codex-budget-${Date.now()}`;
+    setBudget(keyId, { dailyLimitUsd: 0.001 });
+    recordCost(keyId, 100);
+
+    const canonical = evaluateRequest({ model: "codex/gpt-5.6-sol", apiKeyId: keyId });
+    const alias = evaluateRequest({ model: "cx/gpt-5.6-sol", apiKeyId: keyId });
+
+    assert.equal(canonical.allowed, true);
+    assert.equal(alias.allowed, true);
+  });
+
   test("denies when client is locked out", () => {
     const ip = `pe-lockout-${Date.now()}`;
     // Force lockout by recording many failures
