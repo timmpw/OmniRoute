@@ -7,6 +7,7 @@ import {
   getResolvedComboControlCenterTargets,
   summarizeComboControlCenter,
 } from "../../src/lib/combos/controlCenter.ts";
+import { resolveComboTargetProviderDisplayAlias } from "../../src/lib/combos/providerDisplayAlias.ts";
 
 test("getComboControlCenterTargets normalizes legacy, structured and nested combo targets", () => {
   const targets = getComboControlCenterTargets(
@@ -151,4 +152,16 @@ test("resolved targets and runtime config helpers are defensive", () => {
   assert.deepEqual(getResolvedComboControlCenterTargets(null), []);
   assert.deepEqual(extractComboRuntimeConfig({ config: null }), {});
   assert.deepEqual(extractComboRuntimeConfig({ config: { maxRetries: 2 } }), { maxRetries: 2 });
+});
+
+test("combo control center keeps client-safe provider display aliases", () => {
+  const targets = getComboControlCenterTargets({
+    name: "alias-display",
+    models: ["opencode/free-model", "xiaomi/mimo-v2-flash"],
+  });
+
+  assert.equal(targets[0].provider, "opencode");
+  assert.equal(targets[1].provider, "xiaomi");
+  assert.equal(resolveComboTargetProviderDisplayAlias("oc"), "opencode");
+  assert.equal(resolveComboTargetProviderDisplayAlias("xiaomi"), "xiaomi-mimo");
 });

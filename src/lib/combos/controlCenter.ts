@@ -1,6 +1,6 @@
 import { normalizeComboModels, type ComboStep } from "./steps";
+import { resolveComboTargetProviderDisplayAlias } from "./providerDisplayAlias";
 import { resolveComboTargetModelStr } from "../../../open-sse/services/combo/opencodeTargetAlias.ts";
-import { resolveProviderAlias } from "../../../open-sse/services/model.ts";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -118,7 +118,7 @@ function providerFromModel(model: string | null | undefined): string | null {
   const slashIndex = normalized.indexOf("/");
   if (slashIndex <= 0) return null;
   const prefix = normalized.slice(0, slashIndex);
-  return resolveProviderAlias(prefix) || prefix;
+  return resolveComboTargetProviderDisplayAlias(prefix);
 }
 
 function normalizeSuccessRate(value: unknown): number {
