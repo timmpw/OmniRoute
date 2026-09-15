@@ -93,10 +93,13 @@ jobs:
             exit 0
           fi
 
-          # 2) Decide whether to promote :latest. Floating channels are never
-          # eligible, and the helper independently fails closed for non-semver.
+          # 2) Decide whether to promote :latest. Every successful main build
+          # refreshes the default pull tag; release channels never do. Stable
+          # SemVer releases retain the highest-version guard below.
           PROMOTE="false"
-          if [ "$VERSION" = "main" ] || [ "$VERSION" = "next" ]; then
+          if [ "$VERSION" = "main" ]; then
+            PROMOTE="true"
+          elif [ "$VERSION" = "next" ]; then
             PROMOTE="false"
           elif printf '%s' "$VERSION" | grep -qE -- '-(rc|alpha|beta|pre|next)'; then
             echo "Pre-release identifier detected — skipping :latest."
